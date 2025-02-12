@@ -7,17 +7,17 @@ import os
 
 # Fetch Steam sale page
 res = requests.get("https://store.steampowered.com/search/?specials=1&page=2")
-soup = BeautifulSoup(res.text)
+soup = BeautifulSoup(res.text, features="html.parser")
 
 # Filters for the class holding the game list
-rawListData = soup.findAll("a", class_="search_result_row ds_collapse_flag")
+rawListData = soup.find_all("a", class_="search_result_row ds_collapse_flag")
 
 # Creates function fetching the Steam sale list
 def scrape_steam_sale_data(steampage):
     '''Fetches provided link, locates and returns raw game list data'''
     res = requests.get(steampage)
-    soup = BeautifulSoup(res.text)
-    rawListData = soup.findAll("a", class_="search_result_row ds_collapse_flag")
+    soup = BeautifulSoup(res.text, features="html.parser")
+    rawListData = soup.find_all("a", class_="search_result_row ds_collapse_flag")
     return rawListData
 
 
@@ -42,7 +42,7 @@ def get_steam_rating(reviewInput):
     }
 
     result = scale.get(rating)
-    return result
+    return f"{result}/9"
 
 def get_steam_reviews(reviewInput):
     '''Fetches the number of reviews for a submitted store.steampowered.com "search_review_summary" class'''
@@ -85,8 +85,8 @@ def munge_steam_sale_data(rawListData):
         finalPrice = finalPriceEl.text if finalPriceEl else None
 
         # Checks if the element exists and removes unnecessary whitespace
-        if releaseDateEl and releaseDateEl.text.strip():
-            releaseDate = releaseDateEl.text[3:]  # Removes '\n '
+        if releaseDateEl:
+            releaseDate = releaseDateEl.text.strip()  # Removes extra spaces and newlines
         else:
             releaseDate = None
 
@@ -121,7 +121,7 @@ def get_steam_sale_pages(numberOfPages):
         gameList = munge_steam_sale_data(pageData)
         result.extend(gameList)
 
-    columns = ["Game title", "Rating / 9", "#Reviews", "Discount%", "Price",
+    columns = ["Game title", "Rating", "#Reviews", "Discount%", "Price",
                "RegularPrice", "ReleaseYear", "Win", "Linux", "OSX", "Time"]
     df = pd.DataFrame(result, columns=columns)
 
